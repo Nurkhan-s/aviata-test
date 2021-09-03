@@ -6,7 +6,21 @@
           <div class="sidebar">
             <div class="options">
               <div class="options__head">
-                Опции тарифа
+                <span> Опции тарифа</span>
+                <template v-if="optionsMap.size > 0">
+                  <BaseIcon
+                      @mouseover.native="showOptionFilterIcon = true"
+                      v-if="!showOptionFilterIcon"
+                      class="ic-size-20">filterIcon
+                  </BaseIcon>
+                  <BaseIcon
+                      @mouseout.native="showOptionFilterIcon = false"
+                      v-else
+                      class="ic-size-20"
+                      @click.native="clearOptions"
+                  >filterIconHover
+                  </BaseIcon>
+                </template>
               </div>
               <BaseCheckbox
                   class="options__checkboxes"
@@ -15,12 +29,26 @@
                   :key="checkbox.id"
                   v-model="checkbox.value"
                   :text="checkbox.text"
-                  @input="onCheckboxStateChange(checkbox.key, $event)"
+                  @input="filterOptions(checkbox.key, $event)"
               />
             </div>
-            <div class="options">
+            <div class="options" v-if="airlineCompanies.length">
               <div class="options__head">
-                Авиакомпании
+                <span>Авиакомпании</span>
+                <template v-if="airlineMap.size > 0">
+                  <BaseIcon
+                      @mouseover.native="showCompanyFilterIcon = true"
+                      v-if="!showCompanyFilterIcon"
+                      class="ic-size-20">filterIcon
+                  </BaseIcon>
+                  <BaseIcon @mouseout.native="showCompanyFilterIcon = false"
+                            v-else
+                            class="ic-size-20"
+                            @click.native="filterAirline('all', false)"
+                  >filterIconHover
+                  </BaseIcon>
+                </template>
+
               </div>
               <BaseCheckbox
                   class="options__checkboxes"
@@ -29,13 +57,13 @@
                   :key="checkbox.id"
                   v-model="checkbox.value"
                   :text="checkbox.text"
-                  @input="onCheckboxStateChange(checkbox.key, $event)"
+                  @input="filterAirline(checkbox.key, $event)"
               />
             </div>
           </div>
           <div class="content">
             <BaseLoader v-if="isLoading"/>
-            <Card class="card" v-for="(ticket, i) in cards" :key="i" :card="ticket"/>
+            <Card class="card" v-for="(ticket, i) in getFilteredOptions" :key="i" :card="ticket"/>
           </div>
         </div>
       </div>
@@ -44,7 +72,7 @@
 </template>
 <script>
 import Card from "@/components/Card";
-// import Loader from "@/components/Loader";
+import BaseIcon from "@/components/base/BaseIcon"
 import {mapGetters, mapActions} from "vuex";
 import BaseLoader from "@/components/base/BaseLoader";
 import BaseCheckbox from "@/components/base/BaseCheckbox";
@@ -54,16 +82,45 @@ export default {
   components: {
     BaseLoader,
     Card,
-    BaseCheckbox
+    BaseCheckbox,
+    BaseIcon
   },
   computed: {
     ...mapGetters({
       tickets: "tickets",
-      airlineCompanies: 'airlineCompanies'
+      airlines: 'airlines',
+      airlineCompanies: 'airlineCompanies',
     }),
+    getFilteredCards() {
+      if (this.airlineMapTracker && this.airlineMap.size === 0) return this.cards
+      return this.cards.filter(card => {
+        const airline = this.airlineMap.get(card.carrier)
+        return card.carrier_name === airline
+      })
+    },
+    getFilteredOptions() {
+      if (this.optionsMapTracker && this.optionsMap.size === 0) return this.getFilteredCards
+      let array = this.getFilteredCards
+      for (let [key] of this.optionsMap) {
+        if (key === 'stops') {
+          array = array.filter(item => item.stops === 0)
+        }
+        if (key === 'baggage') {
+          array = array.filter(item => {
+            return item.segments[0].baggage_options[0].value !== 0
+          })
+        }
+        if (key === 'refundable') {
+          array = array.filter(item => item.refundable)
+        }
+      }
+      return array
+    }
   },
   data() {
     return {
+      showOptionFilterIcon: false,
+      showCompanyFilterIcon: false,
       isLoading: false,
       optionCheckboxes: [
         {
@@ -85,36 +142,50 @@ export default {
           key: 'refundable'
         }
       ],
-      cards: []
+      airlineMap: new Map(),
+      airlineMapTracker: 1,
+      cards: [],
+      optionsMap: new Map(),
+      optionsMapTracker: 1,
     }
   },
   methods: {
     ...mapActions({
       fetchCards: "fetchCards",
     }),
-    onCheckboxStateChange(key, status) {
-      let map = new Map()
-      map.set(key, status)
-      this.filterByBoolean(map, key)
-      console.log(key, status)
-    },
-    filterByBoolean(map, key) {
-      if (map.has(key)) {
-        const filtered = this.cards.filter(item => {
-          if (key === 'refundable') {
-            return item.refundable
-          }
-          if (key === 'stops') {
-            return item.stops === 0
-          }
-          if(key === 'baggage'){
-            return item.segments[0].baggage_options[0].value !== 0
+    filterAirline(key, toggle) {
+      // Maps are not reactive, this line helps computed property know that map size is changed
+      this.airlineMapTracker += 1;
+      if (key === 'all') {
+        for (let [key] of this.airlineMap) {
+          this.airlineMap.delete(key)
+        }
+        // setting  other checkboxes false
+        this.airlineCompanies.forEach(item => {
+          if (item.key !== 'all') {
+            item.value = false
           }
         })
-        this.cards = filtered
-      } else {
-        this.cards = JSON.parse(JSON.stringify(this.tickets))
+        return
       }
+      if (toggle) {
+        // setting all-key checkbox to false
+        this.airlineCompanies.find(item => item.key === 'all').value = false
+        this.airlineMap.set(key, this.airlines[key])
+      } else {
+        this.airlineMap.delete(key)
+      }
+    },
+    filterOptions(key, toggle) {
+      this.optionsMapTracker += 1
+      if (toggle) this.optionsMap.set(key, key)
+      else this.optionsMap.delete(key)
+    },
+    clearOptions() {
+      this.optionCheckboxes.forEach(item => {
+        item.value = false
+        this.filterOptions(item.key, false)
+      })
     }
   },
   created() {
@@ -178,6 +249,9 @@ body {
     line-height: 20px;
     color: #202123;
     margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 </style>

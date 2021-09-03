@@ -1,7 +1,9 @@
 import Vue from 'vue'
 import App from './App.vue'
 import {store} from "@/store/store.js";
+import vClickOutside from 'v-click-outside'
 
+Vue.use(vClickOutside)
 Vue.config.productionTip = false
 
 //filters
@@ -38,6 +40,11 @@ Vue.filter('dateSetter', function (value) {
         const monthName = months[month]
         return `${date} ${monthName}, ${dayName}`
     }
+})
+Vue.filter('countTime', function (time){
+    const minutes = Math.floor((time / 60) % 60)
+    const hours = Math.floor((time / (60 * 60) % 24))
+    return `${hours} ч ${minutes} м`
 })
 
 new Vue({

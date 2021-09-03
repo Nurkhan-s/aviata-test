@@ -1,5 +1,5 @@
 <template>
-  <div class="checkbox-block">
+  <div class="checkbox-block" @click="changed(value)">
     <div class="checkbox-block__group">
       <label :for="fakeHash" :class="{ active: value }">
         <BaseIcon class="ic-size-6">doneIcon</BaseIcon>
@@ -10,6 +10,7 @@
           :value="value"
           @change="changed(value)"
           class="checkbox-appearance"
+          @click.stop.prevent
       />
     </div>
     <div class="checkbox-block__text">
@@ -44,7 +45,6 @@ export default {
   methods: {
     changed() {
       this.$emit("input", !this.value);
-      this.$emit("onchange", this.value);
     }
   },
 };
@@ -56,7 +56,8 @@ export default {
   width: 100%;
   padding: 5px 10px;
   cursor: pointer;
-  &:hover{
+
+  &:hover {
     background: #EBEBEB;
   }
 
@@ -78,6 +79,7 @@ export default {
         border: 1px solid transparent;
       }
     }
+
     input {
       display: none;
     }

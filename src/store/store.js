@@ -16,11 +16,11 @@ export const store = new Vuex.Store({
         },
         setAirlines(state, airlines) {
             // setting array for checkbox
-            const checkboxArray = Object.entries(airlines).map(([, value], i) => {
+            const checkboxArray = Object.entries(airlines).map(([key, value], i) => {
                 return {
                     value: false,
                     id: i + 2,
-                    key: value,
+                    key: key,
                     text: value
                 }
             })
@@ -33,6 +33,7 @@ export const store = new Vuex.Store({
     },
     getters: {
         tickets: state => state.tickets,
+        airlines: state => state.airlines,
         airlineCompanies: state => state.airlineCompanies
     },
     actions: {

@@ -6,6 +6,10 @@
   </svg>
 </template>
 <style lang="scss" scoped>
+svg {
+  cursor: pointer;
+}
+
 .ic {
 
   &-size {
@@ -17,7 +21,8 @@
       }
     }
   }
-  &-height{
+
+  &-height {
     @for $height from 1 through 1000 {
       &-#{$height} {
         height: #{$height}px;
@@ -25,7 +30,7 @@
     }
   }
 
-  &-width{
+  &-width {
     @for $width from 1 through 1000 {
       &-#{$width} {
         width: #{$width}px;

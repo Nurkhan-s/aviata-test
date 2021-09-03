@@ -15,13 +15,13 @@
         <div class="traveltime">
           <div class="traveltime-info">
             <span>{{ card.segments[0].origin_code }}</span>
-            <span class="time">{{ countTime(card.traveltime) }}</span>
+            <span class="time">{{ card.traveltime | countTime }}</span>
             <span>{{ card.stops === 1 ? card.segments[1].dest_code : card.segments[0].dest_code }}</span>
           </div>
           <BaseIcon class="ic-height-5 ic-width-172">line</BaseIcon>
           <div class="traveltime-stop" v-if="card.stops > 0">{{
-              `Через ${card.segments[0].dest}, ${countTime(card.layovers[0])}`
-            }}
+              `Через ${card.segments[0].dest}, `
+            }}{{ card.layovers[0] | countTime }}
           </div>
         </div>
         <div class="arr_date">
@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="card__left-bottom">
-        <div class="details">
+        <div class="details" @click="showDetails = true">
           Детали перелета
         </div>
         <div class="conditions">
@@ -58,7 +58,10 @@
     </div>
     <DetailModal v-if="showDetails"
                  @click="showDetails = true"
-                 :details="card.segments"/>
+                 :details="card.segments"
+                 :time="card.traveltime"
+                 @updateShow="showDetails = $event"
+    />
     <ConditionModal/>
   </div>
 </template>
@@ -86,7 +89,7 @@ export default {
     },
   },
   computed: {
-    hasBaggage(){
+    hasBaggage() {
       return this.card.segments[0].baggage_options[0].value !== 0
     }
   },
@@ -94,11 +97,6 @@ export default {
     getHour(time) {
       return time.slice(-5)
     },
-    countTime(time) {
-      const minutes = Math.floor((time / 60) % 60)
-      const hours = Math.floor((time / (60 * 60) % 24))
-      return `${hours} ч ${minutes} м`
-    }
   }
 };
 </script>
@@ -207,7 +205,7 @@ export default {
       .conditions {
         font-size: 12px;
         line-height: 16px;
-        color: #7284E4;
+        color: #202123;
         margin-right: 23px;
         cursor: pointer;
         text-decoration: underline;
@@ -215,7 +213,9 @@ export default {
         text-underline-position: under;
         text-underline-offset: 2px;
 
-
+        &:hover {
+          color: #7284E4;
+        }
       }
 
       .refundable {
